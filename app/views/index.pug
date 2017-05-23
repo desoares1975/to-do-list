@@ -1,1 +1,86 @@
 extends base
+
+block content
+    .container(ng-controller="indexCtrl")
+        .row
+            .col-xs-12 &nbsp;
+            .col-xs-12
+                .col-xs-8
+                    input.form-control(type="text" placeholder="Digite aqui a descrição da tarefa" ng-model="task")
+                .col-xs-4
+                    button.btn.btn-primary(ng-click="add(task)" ng-disabled="!task") Criar Tarefa
+            .col-xs-12 &nbsp;
+                table.table(ng-table="todos")
+                    tr(ng-repeat="todo in $data" ng-class="[todo.done ? 'bg-info' : 'bg-danger']")
+                        td(title="'Data de criação'" style="text-align: center" ng-attr-title="{{ todo.createAt | date : 'HH:mm:ss' }}") {{ todo.createAt | date : 'dd/MM/y'}}
+                        td(title="'Tarefa'" style="text-align: center" ng-class="[todo.done ? 'crossed-txt' : '']") {{ todo.task }}
+                        td(title="'Status'" style="text-align: center") {{ todo.done ? 'Concluída' : 'Pendente' }}
+                        td(title="'Concluir'" style="text-align: center")
+                            button.btn.btn-sm.btn-success(ng-click="edit(todo)" ng-disabled="todo.done")
+                                span.glyphicon.glyphicon-ok
+                        td(title="'Apagar'" style="text-align: center")
+                            button.btn.btn-sm.btn-danger(ng-click="delete(todo._id)")
+                                span.glyphicon.glyphicon-remove
+
+    block scripts
+        script(type="text/javascript" src="/public/lodash/lodash.js")
+    script.
+
+        app.controller('indexCtrl', ['$scope', '$http', 'NgTableParams', function ($scope, $http, NgTableParams) {
+            var loadTableData = function (tableData) {
+                $scope.todos = new NgTableParams({
+                    'count': tableData.length
+                }, {
+                    'counts': [],
+                    'dataset': tableData
+                });
+                $scope.todos.reload();
+            };
+
+            $http.get('/todo')
+            .then(function (result) {
+                loadTableData(result.data);
+            })
+            .catch(function (e) {
+                console.log(e);
+            });
+
+            $scope.add = function (task) {
+                $http.post('/todo', {
+                    'task': task
+                })
+                .then(function (result) {
+                    $scope.task = '';
+                    $scope.todos.data.push(result.data);
+                    $scope.todos.data = _.orderBy($scope.todos.data, ['done', 'asc'], ['cretedAt', 'asc']);
+                    loadTableData($scope.todos.data);
+                })
+                .catch(function (e) {
+                    console.log(e);
+                });
+            };
+
+            $scope.edit = function (todo) {
+                todo.done = true;
+                $http.put('/todo/' + todo._id, todo)
+                .then(function () {
+                    $scope.todos.data = _.orderBy($scope.todos.data, ['done', 'asc'], ['cretedAt', 'asc']);
+                    loadTableData($scope.todos.data);
+                })
+                .catch(function (e) {
+                    console.log(e);
+                })
+            };
+
+            $scope.delete = function (_id) {
+                $http.delete('/todo/' + _id)
+                .then(function () {
+                    var deletedIndex = _.findIndex($scope.todos.data, {'_id': _id});
+                    $scope.todos.data.splice(deletedIndex, 1);
+                    loadTableData($scope.todos.data);
+                })
+                .catch(function (e) {
+                    console.log(e);
+                });
+            }
+        }]);

@@ -1,6 +1,7 @@
 'use strict';
 
 const mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
 
 const connect = () => {
     mongoose.connect(`${process.env.MONGO_HOST}/${process.env.MONGO_SCHEMA}`, () => {});

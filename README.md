@@ -15,6 +15,9 @@ $ npm install
 ```
 
 Save the file in the main folder .env.sample as .env
+```bash
+$cp .env.sample .env
+```
 
 ## Starting application
 
